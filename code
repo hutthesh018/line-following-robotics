@@ -1,0 +1,236 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Keypad.h>
+
+// ----------------- OLED CONFIG -----------------
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// ----------------- MOTOR CONFIG -----------------
+#define L_IN1 2
+#define L_IN2 3
+#define L_EN 4
+#define R_IN1 5
+#define R_IN2 6
+#define R_EN 7
+
+// ----------------- SENSOR CONFIG -----------------
+#define LINE_LEFT 8
+#define LINE_RIGHT 9
+#define TRIG_PIN 10
+#define ECHO_PIN 11
+#define BUZZER_PIN 12
+
+// ----------------- BUTTON CONFIG -----------------
+#define ON_BTN 13
+#define OFF_BTN A0
+#define RESTART_BTN A1
+
+// ----------------- ROBOT SETTINGS -----------------
+#define BASE_SPEED 200
+#define OBSTACLE_DISTANCE 20 // in cm
+
+bool running = false;
+bool stoppedByObstacle = false;
+unsigned long lastDebounceTime = 0;
+const unsigned long debounceDelay = 200;
+
+// ----------------- KEYPAD CONFIG -----------------
+const byte ROWS = 4;
+const byte COLS = 4;
+char keys[ROWS][COLS] = {
+  {'1','2','3','A'},
+  {'4','5','6','B'},
+  {'7','8','9','C'},
+  {'*','0','#','D'}
+};
+byte rowPins[ROWS] = {A2, A3, A4, A5};
+byte colPins[COLS] = {8, 9, 10, 11};
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+// ----------------- FUNCTION DECLARATIONS -----------------
+void showDisplay(String line1, String line2);
+void showMenu();
+void startRobot();
+void stopRobot();
+void restartRobot();
+void lineFollow();
+void beep(int times, int duration);
+long getDistanceCM();
+void setMotor(int lSpeed, int rSpeed);
+void stopMotors();
+
+// ----------------- SETUP -----------------
+void setup() {
+  Serial.begin(9600);
+
+  // Motor Pins
+  pinMode(L_IN1, OUTPUT); pinMode(L_IN2, OUTPUT); pinMode(L_EN, OUTPUT);
+  pinMode(R_IN1, OUTPUT); pinMode(R_IN2, OUTPUT); pinMode(R_EN, OUTPUT);
+
+  // Line Sensors
+  pinMode(LINE_LEFT, INPUT);
+  pinMode(LINE_RIGHT, INPUT);
+
+  // Ultrasonic Sensor
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+
+  // Buttons
+  pinMode(ON_BTN, INPUT_PULLUP);
+  pinMode(OFF_BTN, INPUT_PULLUP);
+  pinMode(RESTART_BTN, INPUT_PULLUP);
+
+  // Buzzer
+  pinMode(BUZZER_PIN, OUTPUT);
+  noTone(BUZZER_PIN);
+
+  // OLED
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) while (true);
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+
+  showMenu();
+}
+
+// ----------------- LOOP -----------------
+void loop() {
+  char key = keypad.getKey();
+  if (key) {
+    switch (key) {
+      case '1': startRobot(); break;
+      case '2': stopRobot(); break;
+      case '3': restartRobot(); break;
+      case '4': showDisplay("Smart Robot", "v1.0 by You"); delay(1500); showMenu(); break;
+    }
+  }
+
+  // ON Button
+  if (digitalRead(ON_BTN) == LOW && millis() - lastDebounceTime > debounceDelay) {
+    startRobot();
+    lastDebounceTime = millis();
+  }
+
+  // OFF Button
+  if (digitalRead(OFF_BTN) == LOW && millis() - lastDebounceTime > debounceDelay) {
+    stopRobot();
+    lastDebounceTime = millis();
+  }
+
+  // RESTART Button
+  if (digitalRead(RESTART_BTN) == LOW && stoppedByObstacle && millis() - lastDebounceTime > debounceDelay) {
+    restartRobot();
+    lastDebounceTime = millis();
+  }
+
+  // Running Behavior
+  if (running) {
+    long dist = getDistanceCM();
+    if (dist < OBSTACLE_DISTANCE) {
+      stopMotors();
+      showDisplay("Obstacle Detected", String(dist) + " cm");
+      beep(2, 150);
+      showDisplay("Game Ended", "Press Restart");
+      running = false;
+      stoppedByObstacle = true;
+    } else {
+      lineFollow();
+    }
+  }
+}
+
+// ----------------- MENU DISPLAY -----------------
+void showMenu() {
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.println("Select Option:");
+  display.println("1 - Start");
+  display.println("2 - Stop");
+  display.println("3 - Restart");
+  display.println("4 - About");
+  display.display();
+}
+
+// ----------------- ACTION FUNCTIONS -----------------
+void startRobot() {
+  running = true;
+  stoppedByObstacle = false;
+  showDisplay("Starting Game", "Line Following");
+}
+
+void stopRobot() {
+  running = false;
+  stoppedByObstacle = false;
+  stopMotors();
+  showDisplay("Game Ended", "Press ON");
+}
+
+void restartRobot() {
+  running = true;
+  stoppedByObstacle = false;
+  showDisplay("Resuming", "Line Following");
+}
+
+// ----------------- DISPLAY HELPER -----------------
+void showDisplay(String line1, String line2) {
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.println(line1);
+  display.println(line2);
+  display.display();
+}
+
+// ----------------- LINE FOLLOW -----------------
+void lineFollow() {
+  int leftVal = digitalRead(LINE_LEFT);
+  int rightVal = digitalRead(LINE_RIGHT);
+  int lSpeed = BASE_SPEED;
+  int rSpeed = BASE_SPEED;
+
+  if (leftVal == LOW && rightVal == HIGH) { lSpeed = 0; rSpeed = BASE_SPEED; }
+  else if (leftVal == HIGH && rightVal == LOW) { lSpeed = BASE_SPEED; rSpeed = 0; }
+  else if (leftVal == LOW && rightVal == LOW) { lSpeed = BASE_SPEED; rSpeed = BASE_SPEED; }
+  else { lSpeed = BASE_SPEED; rSpeed = BASE_SPEED; }
+
+  setMotor(lSpeed, rSpeed);
+}
+
+// ----------------- MOTOR CONTROL -----------------
+void setMotor(int lSpeed, int rSpeed) {
+  if (lSpeed > 0) { digitalWrite(L_IN1, HIGH); digitalWrite(L_IN2, LOW); }
+  else if (lSpeed < 0) { digitalWrite(L_IN1, LOW); digitalWrite(L_IN2, HIGH); }
+  else { digitalWrite(L_IN1, LOW); digitalWrite(L_IN2, LOW); }
+  analogWrite(L_EN, abs(lSpeed));
+
+  if (rSpeed > 0) { digitalWrite(R_IN1, HIGH); digitalWrite(R_IN2, LOW); }
+  else if (rSpeed < 0) { digitalWrite(R_IN1, LOW); digitalWrite(R_IN2, HIGH); }
+  else { digitalWrite(R_IN1, LOW); digitalWrite(R_IN2, LOW); }
+  analogWrite(R_EN, abs(rSpeed));
+}
+
+void stopMotors() { setMotor(0, 0); }
+
+// ----------------- ULTRASONIC SENSOR -----------------
+long getDistanceCM() {
+  digitalWrite(TRIG_PIN, LOW); delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH); delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+  long duration = pulseIn(ECHO_PIN, HIGH, 30000);
+  long distance = duration / 58.2;
+  if (distance == 0) return 999;
+  return distance;
+}
+
+// ----------------- BUZZER -----------------
+void beep(int times, int duration) {
+  for (int i = 0; i < times; i++) {
+    tone(BUZZER_PIN, 1000);
+    delay(duration);
+    noTone(BUZZER_PIN);
+    delay(duration);
+  }
+}
