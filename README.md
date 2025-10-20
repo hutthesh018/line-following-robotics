@@ -1,132 +1,134 @@
-
 # Smart Line-Following Obstacle-Avoiding Robot with OLED Display
 
-## Overview:
-This project is a **Smart Line Follower Robot** enhanced with **Obstacle Detection**, **OLED Display Interface**, and **Button Control**.
-Built using an **Arduino UNO (or Nano)**, this robot can **follow a black line**, **detect and avoid obstacles**, and **display real-time information** on an OLED screen.
-The system includes both **manual and serial command controls**, allowing the robot to be started, stopped, or restarted via **button press** or **serial input**.
+## Overview :
+This project is a **Smart Line Follower Robot** built using an **ESP32**, enhanced with **Obstacle Detection**, **OLED Display Interface**, **4x4 Keypad Menu**, and **Button Control**.
+The robot can:
+* Follow a black line using dual IR sensors.
+* Detect and avoid obstacles with an ultrasonic sensor.
+* Display real-time status updates on an OLED screen.
+* Be controlled via **push buttons**, **keypad menu**, or **serial commands**.
+The system now supports **automatic pause when obstacles are detected** and **resuming via restart button** or keypad.
 
-##  Features:
-*  **Line Following** using dual IR sensors.
-*  **Obstacle Detection** using Ultrasonic Sensor (HC-SR04).
-*  **OLED Display (SSD1306)** for live status updates.
-*  **Manual ON/OFF and Restart Buttons** for easy control.
-*  **Buzzer Alert** when an obstacle is detected.
-*  **Motor Speed Control** using PWM.
-*  **Serial Commands** (`start`, `stop`, `restart`, `quit`).
+## Features:
+1. **Line Following** using dual IR sensors.
+2. **Obstacle Detection** using Ultrasonic Sensor (HC-SR04).
+3. **OLED Display (SSD1306 I2C)** for live status updates:
+   * `"Ready / Press ON"`
+   * `"Starting Game"`
+   * `"Running / Line Following"`
+   * `"Obstacle Detected / XX cm"`
+   * `"Game Ended / Press Restart"`
+   * `"Resuming / Line Following"`
+4. **Manual Control**: ON, OFF, Restart buttons.
+5. **4x4 Keypad Menu** for selecting modes: Start, Stop, Restart, About.
+6. **Buzzer Alert** when obstacle is detected.
+7. **Motor Speed Control** via PWM.
+8. **Serial Commands** supported: `start`, `stop`, `restart`, `quit`.
 
-## Components Required:
+## 🛠️ Components Required
+| Component                     | Quantity |
+| ----------------------------- | -------- |
+| ESP32 Development Board       | 1        |
+| L293D / L298N Motor Driver    | 1        |
+| DC Gear Motors                | 2        |
+| IR Line Sensors               | 2        |
+| Ultrasonic Sensor (HC-SR04)   | 1        |
+| OLED Display (SSD1306, I2C)   | 1        |
+| Keypad                        | 1        |
+| Push Buttons                  | 3        |
+| Buzzer                        | 1        |
+| 7.4V Li-ion Pack / 9V Battery | 1        |
+| Jumper Wires / Breadboard     | -        |
 
-| Component                   | Quantity | 
-| --------------------------- | -------- |
-| Arduino UNO / Nano          | 1        |
-| L293D / L298N Motor Driver  | 1        |
-| DC Gear Motors              | 2        |
-| IR Line Sensors             | 2        |
-| Ultrasonic Sensor (HC-SR04) | 1        |
-| OLED Display (SSD1306, I2C) | 1        |
-| Push Buttons                | 2        |
-| Buzzer                      | 1        |
-| Power Supply                | 1        |
-| Jumper Wires, Breadboard    | -        |
 
+## Circuit Connection :
 
-## Circuit Connection:
+### Motor Driver (L293D / L298N)
+* **Left Motor:** IN1 → GPIO 2, IN2 → GPIO 3, ENA → GPIO 4 (PWM)
+* **Right Motor:** IN3 → GPIO 5, IN4 → GPIO 6, ENB → GPIO 7 (PWM)
+* Motor Power VCC → Battery +
+* GND → Common Ground
+* OUT pins → Connect to DC motors
 
-### **Motor Driver (L293D / L298N)**
-* **Left Motor:**
-  * IN1 → Arduino **Pin 2**
-  * IN2 → Arduino **Pin 3**
-  * ENA → Arduino **Pin 4** *(PWM for speed)*
-* **Right Motor:**
-  * IN3 → Arduino **Pin 5**
-  * IN4 → Arduino **Pin 6**
-  * ENB → Arduino **Pin 7** *(PWM for speed)*
-* **Motor Power (VCC):** 9V or Battery +
-* **Motor Driver GND:** Connect to Arduino **GND**
-* **Motor Output Pins (OUT1, OUT2, OUT3, OUT4):** Connect to Left and Right DC motors
+### Line Sensors
+* Left IR OUT → GPIO 8
+* Right IR OUT → GPIO 9
+* VCC → 3.3V / 5V
+* GND → GND
 
-### **Line Sensors (IR Sensors)**
-* **Left IR Sensor OUT → Arduino Pin 8**
-* **Right IR Sensor OUT → Arduino Pin 9**
-* **VCC of both sensors → 5V (from Arduino)**
-* **GND of both sensors → GND (common ground)**
+### Ultrasonic Sensor (HC-SR04)
+* VCC → 5V
+* GND → GND
+* TRIG → GPIO 10
+* ECHO → GPIO 11
 
-### **Ultrasonic Sensor (HC-SR04)**
-* **VCC → 5V**
-* **GND → GND**
-* **TRIG → Arduino Pin 10**
-* **ECHO → Arduino Pin 11**
+### OLED Display (SSD1306 I2C)
+* VCC → 3.3V
+* GND → GND
+* SDA → GPIO 21
+* SCL → GPIO 22
 
-### **OLED Display (SSD1306 I2C)**
-* **VCC → 3.3V or 5V (depending on model)**
-* **GND → GND**
-* **SDA → Arduino A4**
-* **SCL → Arduino A5**
+### Keypad (only keys 1–4 used)
+* Row Pins → GPIO 32, 33, 25, 26
+* Column Pins → GPIO 27, 14, 12, 13
+* Only keys 1 (Start), 2 (Stop), 3 (Restart), 4 (About) are functiona
 
-### **Buttons**
-* **ON/OFF Button → Arduino Pin 13**
-  * One leg → Pin 13
-  * Other leg → GND
-* **Restart Button → Arduino A0**
-  * One leg → A0
-  * Other leg → GND
+### Push Buttons
+* ON Button → GPIO 13 + GND
+* OFF Button → GPIO A0 + GND
+* Restart Button → GPIO A1 + GND
 
-###  **Buzzer**
-* **Positive (+) → Arduino Pin 12**
-* **Negative (–) → GND**
+### Buzzer
+* * → GPIO 12
+* – → GND
 
-### **Power Supply**
+### Power Supply
+* 7.4V Li-ion / 9V Battery → Motor Driver VCC
+* ESP32 VIN → Same Battery + (or through motor driver 5V output)
+* Connect all GNDs together (ESP32, Sensors, Motor Driver, OLED, Battery)
 
-* **9V Battery or 7.4V Li-ion pack → Motor Driver VCC**
-* **Arduino VIN → Same Battery + (through motor driver’s 5V out or direct)**
-* **All Grounds (GND) must be connected together** → *(Arduino, Sensors, Motor Driver, OLED, Battery)*
 
 ## Working Principle:
 1. **Startup Phase:**
-   * OLED displays "Ready" and waits for the user to press the ON button.
+   OLED shows `"Ready / Press ON"`; robot waits for ON button or keypad selection.
 2. **Line Following:**
-   * Robot follows the black line using two IR sensors.
-   * Left/right motor speeds are adjusted based on sensor inputs.
+   Dual IR sensors detect the black line. Motor speeds adjust automatically.
 3. **Obstacle Detection:**
-   * Ultrasonic sensor measures distance ahead.
-   * If obstacle < 20 cm → robot stops, buzzer beeps, and OLED shows "Obstacle!".
-4. **Restart/Stop Control:**
-   * Press ON/OFF button or send command through Serial Monitor.
-   * Press Restart button to continue operation.
+   Ultrasonic sensor checks distance ahead. If < 20 cm:
+   * Motors stop
+   * Buzzer alerts
+   * OLED shows `"Obstacle Detected"` → `"Game Ended / Press Restart"`
+4. **Restart / Stop Control:**
+   * **Restart Button** or keypad can resume operation.
+   * **ON/OFF Buttons** or serial commands (`start`, `stop`, `restart`, `quit`) control robot.
 
-
-## Serial Commands:
-You can control the robot using the Arduino Serial Monitor
-| Command   | Function              |
-| --------- | --------------------- |
-| `start`   | Starts line following |
-| `stop`    | Stops robot           |
-| `restart` | Resumes after stop    |
-| `quit`    | Stops and exits loop  |
+##  Keypad Menu:
+| Key | Function |
+| --- | -------- |
+| 1   | Start    |
+| 2   | Stop     |
+| 3   | Restart  |
+| 4   | About    |
 
 
 ## OLED Display Messages:
-| Status    | Message on OLED              |
-| --------- | ---------------------------- |
-| Idle      | `Ready` / `Press ON`         |
-| Running   | `Running` / `Line Following` |
-| Obstacle  | `Obstacle!` / `XX cm`        |
-| Restarted | `Restarted` / `Resuming`     |
-| Stopped   | `Stopped` / `Press ON`       |
-
+| Status    | OLED Message               |
+| --------- | -------------------------- |
+| Idle      | Ready / Press ON           |
+| Starting  | Starting Game              |
+| Running   | Running / Line Following   |
+| Obstacle  | Obstacle Detected / XX cm  |
+| Stopped   | Game Ended / Press Restart |
+| Restarted | Resuming / Line Following  |
 
 ## How to Use:
-1. Upload the sketch to your Arduino board.
-2. Power up the system and ensure OLED displays “Ready.”
-3. Place the robot on a **black line over white surface**.
-4. Press **ON/OFF** button or send `start` command.
-5. The robot will start following the line.
-6. Place an obstacle in front to test ultrasonic detection.
-7. Press **Restart** or send `restart` to resume.
+1. Upload ESP32 sketch.
+2. Power the system; OLED displays **“Ready”**.
+3. Place robot on black line.
+4. Use **ON Button**, **Restart Button**, or **Keypad** to control.
+5. Obstacle stops robot; restart resumes automatically.
+6. Serial commands can also be used for control.
 
-## License
-This project is open-source and free for educational use.
-Developed for academic and prototype demonstration purposes.
-
+## License:
+Open-source for **educational and prototype purposes**.
 
