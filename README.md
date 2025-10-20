@@ -7,13 +7,13 @@ Built using an **Arduino UNO (or Nano)**, this robot can **follow a black line**
 The system includes both **manual and serial command controls**, allowing the robot to be started, stopped, or restarted via **button press** or **serial input**.
 
 ##  Features:
-* 🔹 **Line Following** using dual IR sensors.
-* 🔹 **Obstacle Detection** using Ultrasonic Sensor (HC-SR04).
-* 🔹 **OLED Display (SSD1306)** for live status updates.
-* 🔹 **Manual ON/OFF and Restart Buttons** for easy control.
-* 🔹 **Buzzer Alert** when an obstacle is detected.
-* 🔹 **Motor Speed Control** using PWM.
-* 🔹 **Serial Commands** (`start`, `stop`, `restart`, `quit`).
+*  **Line Following** using dual IR sensors.
+*  **Obstacle Detection** using Ultrasonic Sensor (HC-SR04).
+*  **OLED Display (SSD1306)** for live status updates.
+*  **Manual ON/OFF and Restart Buttons** for easy control.
+*  **Buzzer Alert** when an obstacle is detected.
+*  **Motor Speed Control** using PWM.
+*  **Serial Commands** (`start`, `stop`, `restart`, `quit`).
 
 ## Components Required:
 
